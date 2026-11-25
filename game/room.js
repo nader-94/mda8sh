@@ -815,8 +815,8 @@ function buildStateForPlayer(room, playerId) {
     players: room.players.map(p => ({
       id: p.id,
       name: p.name,
-      balance: p.balance,
-      reserveBank: p.reserveBank,
+      balance: (room.state === 'ended' || p.id === playerId) ? p.balance : null,
+      reserveBank: (room.state === 'ended' || p.id === playerId) ? p.reserveBank : null,
       reserveUsed: p.reserveUsed,
       connected: p.connected,
       status: p.status,

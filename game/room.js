@@ -203,6 +203,7 @@ function placeBid(room, playerId, amount) {
   const curIdx = round.currentBidderIndex % activePlayers.length;
   if (activePlayers[curIdx].id !== playerId) return { error: 'ليس دورك' };
   if (round.foldedPlayers.includes(playerId)) return { error: 'لقد انسحبت من الجولة' };
+  if (round.bids[playerId] !== undefined) return { error: 'سبق وساومت، كل لاعب يساوم مرة واحدة فقط' };
 
   const player = room.players.find(p => p.id === playerId);
   if (!player) return { error: 'اللاعب غير موجود' };
@@ -273,6 +274,8 @@ function foldBid(room, playerId) {
 
 /**
  * تقدم المزايد والتحقق من انتهاء المساومة
+ * كل لاعب يساوم مرة واحدة فقط (سوّم / دخول بالبنك / انسحاب)
+ * بعد ما الكل ياخذ دوره → الأعلى هو البوس
  */
 function advanceBidder(room) {
   const round = room.round;
@@ -287,17 +290,38 @@ function advanceBidder(room) {
     return;
   }
 
-  let next = (round.currentBidderIndex + 1) % activePlayers.length;
-  let tries = 0;
-  while (round.foldedPlayers.includes(activePlayers[next].id)) {
-    next = (next + 1) % activePlayers.length;
-    if (++tries > activePlayers.length) break;
+  // تحقق: هل كل اللاعبين أخذوا دورهم؟ (ساوموا أو انسحبوا)
+  const allDecided = activePlayers.every(p =>
+    round.bids[p.id] !== undefined || round.foldedPlayers.includes(p.id)
+  );
+
+  if (allDecided) {
+    // الأعلى سومة هو البوس
+    if (round.bossId && round.currentBid > 0) {
+      round.bossEntry = round.currentBid;
+      transitionToBossOffers(room);
+    }
+    return;
   }
 
-  // إذا عاد الدور إلى صاحب أعلى سومة (البوس) → انتهت المساومة
-  if (activePlayers[next].id === round.bossId && Object.keys(round.bids).length > 0) {
-    round.bossEntry = round.currentBid;
-    transitionToBossOffers(room);
+  // ابحث عن اللاعب التالي الذي لم يأخذ دوره بعد
+  let next = (round.currentBidderIndex + 1) % activePlayers.length;
+  let tries = 0;
+  while (
+    (round.foldedPlayers.includes(activePlayers[next].id) ||
+     round.bids[activePlayers[next].id] !== undefined) &&
+    tries < activePlayers.length
+  ) {
+    next = (next + 1) % activePlayers.length;
+    tries++;
+  }
+
+  if (tries >= activePlayers.length) {
+    // الكل أخذ دوره
+    if (round.bossId && round.currentBid > 0) {
+      round.bossEntry = round.currentBid;
+      transitionToBossOffers(room);
+    }
     return;
   }
 

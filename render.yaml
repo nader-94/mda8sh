@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: mda8sh-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health

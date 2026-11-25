@@ -226,29 +226,6 @@ function placeBid(room, playerId, amount) {
 }
 
 /**
- * مجاراة السومة الحالية (دخول بالسومة دون رفعها للبقاء في الجولة وعروض البوس)
- */
-function callBid(room, playerId) {
-  const round = room.round;
-  if (!round || round.phase !== 'bidding') return { error: 'ليست مرحلة المساومة' };
-
-  const activePlayers = getActivePlayers(room);
-  const curIdx = round.currentBidderIndex % activePlayers.length;
-  if (activePlayers[curIdx].id !== playerId) return { error: 'ليس دورك' };
-  if (round.foldedPlayers.includes(playerId)) return { error: 'لقد انسحبت من الجولة' };
-  if (round.currentBid === 0) return { error: 'ابدأ المساومة بمبلغ 1,000 ريال على الأقل' };
-  if (round.bossId === playerId) return { error: 'أنت البوس الحالي بالفعل' };
-
-  const player = room.players.find(p => p.id === playerId);
-  const available = getAvailableBalance(player);
-  if (available < round.currentBid) return { error: 'رصيدك أقل من السومة، استخدم زر دخول بالبنك' };
-
-  round.bids[playerId] = round.currentBid;
-  advanceBidder(room);
-  return { success: true, amount: round.currentBid };
-}
-
-/**
  * دخول اللاعب بالبنك (بمبلغ أقل من السومة، بما في رصيده فقط دون إكمال الفرق)
  */
 function enterWithBank(room, playerId) {
@@ -892,7 +869,6 @@ module.exports = {
   startRound,
   flipPerk,
   placeBid,
-  callBid,
   enterWithBank,
   foldBid,
   makeOffer,

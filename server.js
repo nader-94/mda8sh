@@ -125,18 +125,7 @@ io.on('connection', (socket) => {
     reply({ success: true });
   });
 
-  socket.on('call_bid', (payload, cb) => {
-    const reply = safeCb(cb);
-    const { code } = payload || {};
-    const r = room.getRoom(String(code || '').toUpperCase().trim());
-    if (!r) return reply({ error: 'الغرفة غير موجودة' });
 
-    const result = room.callBid(r, socket.id);
-    if (result.error) return reply({ error: result.error });
-
-    broadcastState(r);
-    reply({ success: true, amount: result.amount });
-  });
 
   socket.on('enter_with_bank', (payload, cb) => {
     const reply = safeCb(cb);
